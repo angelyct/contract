@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合約管理系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F1E9;
+    --surface:#FFFFFF;
+    --surface-alt:#FBF8F2;
+    --ink:#232A31;
+    --ink-soft:#69727C;
+    --ink-faint:#9AA3AC;
+    --border:#E2DCCE;
+    --border-strong:#D2C9B8;
+    --primary:#2C4A52;
+    --primary-dark:#1E3338;
+    --primary-soft:#E1EAEC;
+    --accent:#B5814A;
+
+    --status-active:#3F7D52;     --status-active-bg:#E6F1E9;
+    --status-pending:#A6781B;    --status-pending-bg:#F8EFD9;
+    --status-renewed:#3E5C8A;    --status-renewed-bg:#E6EBF4;
+    --status-void:#888C90;       --status-void-bg:#EDEDED;
+    --status-expiring:#C2622A;   --status-expiring-bg:#FAE6D8;
+    --status-overdue:#B5392E;    --status-overdue-bg:#F8E1DE;
+
+    --radius:10px;
+    --shadow:0 1px 3px rgba(35,42,49,0.08),0 1px 2px rgba(35,42,49,0.05);
+    --font-display:'Noto Serif TC', serif;
+    --font-body:'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--primary-soft);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .app{max-width:1180px; margin:0 auto; padding:24px 20px 80px;}
+
+  /* ---------- Header ---------- */
+  .app-header{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; flex-wrap:wrap; margin-bottom:24px;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    display:flex; align-items:center; justify-content:center;
+    width:46px; height:46px; border-radius:10px;
+    background:var(--primary); color:#fff;
+    font-family:var(--font-display); font-weight:700; font-size:1.3rem;
+    flex-shrink:0;
+  }
+  .brand h1{
+    margin:0; font-family:var(--font-display); font-weight:700;
+    font-size:1.5rem; color:var(--ink); letter-spacing:0.02em;
+  }
+  .brand-sub{
+    margin:2px 0 0; font-size:0.7rem; letter-spacing:0.18em;
+    color:var(--ink-faint); text-transform:uppercase;
+  }
+  .header-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .mode-indicator{
+    font-size:0.78rem; font-weight:700; padding:6px 12px; border-radius:999px;
+  }
+  .mode-indicator.viewer{background:var(--surface-alt); color:var(--ink-soft); border:1px solid var(--border-strong);}
+  .mode-indicator.editor{background:var(--status-active-bg); color:var(--status-active);}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:var(--font-body); font-size:0.88rem; font-weight:500;
+    padding:9px 16px; border-radius:8px; border:1px solid transparent;
+    cursor:pointer; transition:background .15s, border-color .15s, color .15s;
+    white-space:nowrap;
+  }
+  .btn-primary{background:var(--primary); color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-ghost{background:var(--surface); color:var(--ink); border-color:var(--border-strong);}
+  .btn-ghost:hover{background:var(--surface-alt); border-color:var(--primary);}
+  .btn-sm{padding:6px 12px; font-size:0.8rem;}
+  .btn-danger{background:transparent; color:var(--status-overdue); border-color:var(--status-overdue-bg);}
+  .btn-danger:hover{background:var(--status-overdue-bg);}
+
+  /* ---------- Dashboard ---------- */
+  .dashboard{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px;
+  }
+  .stat-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px 18px; box-shadow:var(--shadow); cursor:pointer;
+    transition:transform .12s, box-shadow .12s; text-align:left;
+  }
+  .stat-card:hover{transform:translateY(-2px); box-shadow:0 4px 10px rgba(35,42,49,0.10);}
+  .stat-label{display:block; font-size:0.78rem; color:var(--ink-soft); margin-bottom:6px;}
+  .stat-value{
+    display:block; font-family:var(--font-display); font-weight:700;
+    font-size:1.9rem; font-variant-numeric:tabular-nums; color:var(--ink);
+  }
+  .stat-expiring .stat-value{color:var(--status-expiring);}
+  .stat-overdue .stat-value{color:var(--status-overdue);}
+  .stat-active .stat-value{color:var(--status-active);}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    margin-bottom:12px;
+  }
+  .toolbar input[type="search"]{
+    flex:1 1 220px; min-width:160px;
+  }
+  input, select, textarea{
+    font-family:var(--font-body); font-size:0.88rem; color:var(--ink);
+    background:var(--surface); border:1px solid var(--border-strong);
+    border-radius:8px; padding:8px 12px;
+  }
+  input:focus, select:focus, textarea:focus{border-color:var(--primary);}
+  .toolbar select{flex:0 0 auto;}
+
+  /* ---------- Status banner ---------- */
+  .status-banner{
+    display:flex; align-items:center; gap:10px; padding:10px 16px;
+    border-radius:8px; font-size:0.85rem; margin-bottom:16px;
+  }
+  .status-banner[hidden]{display:none;}
+  .status-banner.info{background:var(--primary-soft); color:var(--primary-dark);}
+  .status-banner.error{background:var(--status-overdue-bg); color:var(--status-overdue);}
+  .status-banner .btn{flex-shrink:0;}
+
+  /* ---------- Card grid ---------- */
+  .group-section{margin-bottom:26px;}
+  .group-title{
+    font-family:var(--font-display); font-size:1.05rem; font-weight:700;
+    margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--border-strong);
+    display:flex; align-items:baseline; gap:8px; color:var(--ink);
+  }
+  .group-count{
+    font-family:var(--font-body); font-size:0.78rem; font-weight:500;
+    color:var(--ink-faint);
+  }
+  .card-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(330px, 1fr)); gap:16px;
+  }
+
+  .contract-card{
+    position:relative; background:var(--surface);
+    border:1px solid var(--border); border-left:4px solid var(--status-color, var(--ink-faint));
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px 18px; display:flex; flex-direction:column; gap:10px;
+  }
+  .card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .card-title-group{display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .card-code{
+    font-size:0.72rem; font-weight:700; letter-spacing:0.1em;
+    color:var(--accent); text-transform:uppercase; font-variant-numeric:tabular-nums;
+  }
+  .card-title{
+    margin:0; font-family:var(--font-display); font-weight:700;
+    font-size:1.05rem; color:var(--ink); word-break:break-word;
+  }
+  .badge{
+    display:inline-flex; align-items:center; padding:2px 10px; border-radius:999px;
+    font-size:0.72rem; font-weight:700; letter-spacing:0.02em; white-space:nowrap;
+  }
+  .badge-category{background:var(--primary-soft); color:var(--primary-dark);}
+  .badge-status{background:var(--status-color-bg, var(--status-void-bg)); color:var(--status-color, var(--status-void));}
+
+  .countdown-stamp{
+    position:absolute; top:-14px; right:18px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:50px; height:50px; border-radius:50%;
+    border:2px solid var(--status-color);
+    background:var(--surface);
+    color:var(--status-color); font-weight:700; line-height:1.05;
+    transform:rotate(-9deg); box-shadow:var(--shadow);
+  }
+  .countdown-stamp .num{font-family:var(--font-display); font-size:1.05rem;}
+  .countdown-stamp .unit{font-size:0.6rem; letter-spacing:0.04em;}
+
+  .card-meta{font-size:0.85rem; color:var(--ink-soft); display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+  .card-meta .dot{color:var(--ink-faint);}
+
+  .date-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+    background:var(--surface-alt); border:1px solid var(--border); border-radius:8px;
+    padding:10px 12px;
+  }
+  .date-item{display:flex; flex-direction:column; gap:2px; font-variant-numeric:tabular-nums;}
+  .date-label{font-size:0.68rem; color:var(--ink-faint); letter-spacing:0.06em; text-transform:uppercase;}
+  .date-item span:last-child{font-size:0.85rem; color:var(--ink);}
+
+  .urgency-tag{
+    align-self:flex-start; font-size:0.76rem; font-weight:700; padding:2px 10px;
+    border-radius:999px;
+  }
+  .urgency-expiring{background:var(--status-expiring-bg); color:var(--status-expiring);}
+  .urgency-overdue{background:var(--status-overdue-bg); color:var(--status-overdue);}
+
+  .card-notes{
+    margin:0; font-size:0.82rem; color:var(--ink-soft);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .card-link{font-size:0.8rem;}
+  .card-link a{color:var(--primary-dark); text-decoration:none;}
+  .card-link a:hover{text-decoration:underline;}
+  .card-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:auto; padding-top:4px;}
+
+  /* ---------- Expiry overview ---------- */
+  .expiry-month{margin-bottom:18px;}
+  .expiry-month-title{
+    font-family:var(--font-display); font-size:0.95rem; font-weight:700;
+    padding-bottom:6px; border-bottom:1px solid var(--border-strong); margin:0 0 8px;
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .expiry-month-title.overdue-title{color:var(--status-overdue); border-color:var(--status-overdue-bg);}
+  .expiry-row{
+    display:flex; align-items:center; gap:10px; padding:8px 10px;
+    border-radius:8px; font-size:0.85rem; cursor:pointer;
+  }
+  .expiry-row:hover{background:var(--surface-alt);}
+  .expiry-row .e-code{font-weight:700; color:var(--accent); flex:0 0 90px; font-variant-numeric:tabular-nums;}
+  .expiry-row .e-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .expiry-row .e-company{flex:0 1 30%; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .expiry-row .e-days{
+    flex:0 0 auto; font-size:0.76rem; font-weight:700; padding:2px 10px; border-radius:999px;
+  }
+  .e-days.d-overdue{background:var(--status-overdue-bg); color:var(--status-overdue);}
+  .e-days.d-soon{background:var(--status-expiring-bg); color:var(--status-expiring);}
+  .e-days.d-ok{background:var(--primary-soft); color:var(--primary-dark);}
+  .expiry-empty{padding:30px 10px; text-align:center; color:var(--ink-faint); font-size:0.88rem;}
+
+  /* ---------- Stats charts ---------- */
+  .stats-section{margin-bottom:24px;}
+  .stats-section-title{
+    font-family:var(--font-display); font-size:1rem; font-weight:700; margin:0 0 12px;
+    padding-bottom:6px; border-bottom:1px solid var(--border-strong);
+  }
+  .donut-wrap{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+  .donut-legend{display:flex; flex-direction:column; gap:8px;}
+  .legend-item{display:flex; align-items:center; gap:8px; font-size:0.85rem;}
+  .legend-dot{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
+  .legend-item .l-count{color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+  .hbar-row{display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:0.83rem;}
+  .hbar-label{flex:0 0 90px; text-align:right; color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+  .hbar-track{flex:1; height:20px; background:var(--surface-alt); border-radius:5px; overflow:hidden;}
+  .hbar-fill{height:100%; border-radius:5px; background:var(--primary); min-width:2px; transition:width .3s;}
+  .hbar-count{flex:0 0 44px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:700;}
+
+  /* ---------- Empty state ---------- */
+  .empty-state{
+    text-align:center; padding:60px 20px; color:var(--ink-soft);
+    border:1px dashed var(--border-strong); border-radius:var(--radius); background:var(--surface);
+  }
+  .empty-title{font-family:var(--font-display); font-size:1.15rem; color:var(--ink); margin:0 0 6px;}
+  .empty-desc{margin:0; font-size:0.88rem;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(35,42,49,0.45);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal-overlay[hidden]{display:none;}
+  .modal{
+    background:var(--surface); border-radius:14px; width:100%; max-width:680px;
+    max-height:90vh; overflow-y:auto; box-shadow:0 12px 32px rgba(35,42,49,0.25);
+  }
+  .modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 22px; border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:var(--surface); z-index:1;
+  }
+  .modal-header h2{margin:0; font-family:var(--font-display); font-size:1.25rem;}
+  .modal-close{
+    background:none; border:none; cursor:pointer; color:var(--ink-soft); padding:4px;
+    display:flex; border-radius:6px;
+  }
+  .modal-close:hover{color:var(--ink); background:var(--surface-alt);}
+
+  .modal-body{padding:20px 22px 6px;}
+  .form-section{margin-bottom:18px;}
+  .form-section-title{
+    font-size:0.74rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 10px;
+  }
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field.full{grid-column:1 / -1;}
+  .field label{font-size:0.8rem; color:var(--ink-soft);}
+  .field-hint{font-size:0.72rem; color:var(--ink-faint); margin-top:2px;}
+  .code-hint-apply{
+    margin-left:4px; font-size:0.72rem; color:var(--primary); text-decoration:underline;
+    cursor:pointer; background:none; border:none; padding:0; font-family:var(--font-body);
+  }
+  .code-hint-apply:hover{color:var(--primary-dark);}
+  .code-ref-panel{
+    margin-top:8px; border:1px solid var(--border); border-radius:8px;
+    max-height:180px; overflow-y:auto; background:var(--surface-alt);
+  }
+  .code-ref-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:6px 12px; font-size:0.8rem; cursor:pointer; border-bottom:1px solid var(--border);
+  }
+  .code-ref-row:last-child{border-bottom:none;}
+  .code-ref-row:hover{background:var(--primary-soft);}
+  .code-ref-row .prefix{font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .code-ref-row .ref-max{color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+  .code-ref-row .ref-next{color:var(--accent); font-weight:700; font-variant-numeric:tabular-nums;}
+  .code-ref-empty{padding:10px 12px; font-size:0.8rem; color:var(--ink-faint); margin:0;}
+  .date-fields{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; grid-column:1/-1;}
+
+  .modal-footer{
+    display:flex; justify-content:flex-end; gap:10px;
+    padding:16px 22px; border-top:1px solid var(--border);
+    position:sticky; bottom:0; background:var(--surface);
+  }
+
+  /* ---------- Footer note ---------- */
+  .footer-note{
+    margin-top:30px; font-size:0.8rem; color:var(--ink-faint);
+    text-align:center;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:760px){
+    .dashboard{grid-template-columns:repeat(2,1fr);}
+    .form-grid, .date-fields{grid-template-columns:1fr;}
+    .app-header{align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">約</span>
+      <div>
+        <h1>合約管理系統</h1>
+        <p class="brand-sub">Contract Ledger</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="mode-indicator viewer" id="modeIndicator">🔍 唯讀模式（僅可查詢）</span>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="btn btn-ghost" id="importBtn">匯入資料</button>
+      <button class="btn btn-ghost" id="exportBtn">匯出資料</button>
+      <button class="btn btn-ghost" id="refreshBtn">重新整理</button>
+      <button class="btn btn-ghost" id="settingsBtn">設定</button>
+      <button class="btn btn-primary" id="addBtn">＋ 新增合約</button>
+    </div>
+  </header>
+
+  <div class="status-banner" id="statusBanner" hidden></div>
+
+  <section class="dashboard">
+    <div class="stat-card" data-filter="all">
+      <span class="stat-label">合約總數</span>
+      <span class="stat-value" id="statTotal">0</span>
+    </div>
+    <div class="stat-card stat-active" data-filter="active">
+      <span class="stat-label">進行中</span>
+      <span class="stat-value" id="statActive">0</span>
+    </div>
+    <div class="stat-card stat-expiring" data-filter="expiring">
+      <span class="stat-label">即將到期</span>
+      <span class="stat-value" id="statExpiring">0</span>
+    </div>
+    <div class="stat-card stat-overdue" data-filter="overdue">
+      <span class="stat-label">已逾期</span>
+      <span class="stat-value" id="statOverdue">0</span>
+    </div>
+  </section>
+
+  <section class="toolbar">
+    <input type="search" id="searchInput" placeholder="搜尋編號、合約名稱、公司、聯絡人、備註…" autocomplete="off">
+    <select id="categoryFilter">
+      <option value="all">全部類別</option>
+      <option value="供應商/採購">供應商/採購</option>
+      <option value="客戶/銷售">客戶/銷售</option>
+      <option value="NDA">NDA</option>
+      <option value="其他">其他</option>
+    </select>
+    <select id="statusFilter">
+      <option value="all">全部狀態</option>
+      <option value="進行中">進行中</option>
+      <option value="待簽署">待簽署</option>
+      <option value="已續約">已續約</option>
+      <option value="已作廢">已作廢</option>
+      <option value="expiring">即將到期</option>
+      <option value="overdue">已逾期</option>
+    </select>
+    <select id="sortSelect">
+      <option value="expiry-asc">到期日（近→遠）</option>
+      <option value="expiry-desc">到期日（遠→近）</option>
+      <option value="updated">最近更新</option>
+      <option value="name">名稱（A→Z）</option>
+    </select>
+    <select id="groupSelect">
+      <option value="none">不分組</option>
+      <option value="category">按類別分組</option>
+      <option value="code">按編號分組</option>
+    </select>
+    <button class="btn btn-ghost" id="expiryViewBtn">📅 到期總覽</button>
+    <button class="btn btn-ghost" id="statsBtn">📊 統計</button>
+  </section>
+
+  <main id="contractList"></main>
+  <div class="empty-state" id="emptyState" hidden>
+    <p class="empty-title"></p>
+    <p class="empty-desc"></p>
+  </div>
+
+  <p class="footer-note">資料儲存在共用的 Google試算表中，所有設定相同連線網址的人都會看到同一份合約清單。建議仍定期使用「匯出資料」備份。</p>
+</div>
+
+<!-- 新增/編輯 合約 Modal -->
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">新增合約</h2>
+      <button class="modal-close" id="modalClose" aria-label="關閉" type="button">✕</button>
+    </div>
+    <form id="contractForm">
+      <div class="modal-body">
+        <input type="hidden" id="contractId">
+
+        <div class="form-section">
+          <p class="form-section-title">基本資訊</p>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="codeInput">編號</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="text" id="codeInput" placeholder="例如：PPBU4001" style="max-width:200px">
+                <button type="button" class="btn btn-sm btn-ghost" id="codeRefBtn">編號參考</button>
+              </div>
+              <p class="field-hint" id="codeHint"></p>
+              <div class="code-ref-panel" id="codeRefPanel" hidden></div>
+            </div>
+            <div class="field full">
+              <label for="nameInput">合約名稱 *</label>
+              <input type="text" id="nameInput" required placeholder="例如：2026年度 OEM 採購合約">
+            </div>
+            <div class="field">
+              <label for="categoryInput">合約類別</label>
+              <select id="categoryInput">
+                <option value="供應商/採購">供應商/採購</option>
+                <option value="客戶/銷售">客戶/銷售</option>
+                <option value="NDA">NDA</option>
+                <option value="其他">其他</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="statusInput">狀態</label>
+              <select id="statusInput">
+                <option value="進行中">進行中</option>
+                <option value="待簽署">待簽署</option>
+                <option value="已續約">已續約</option>
+                <option value="已作廢">已作廢</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="companyInput">對方公司</label>
+              <input type="text" id="companyInput" placeholder="例如：ABC Trading Co., Ltd.">
+            </div>
+            <div class="field">
+              <label for="contactInput">聯絡人</label>
+              <input type="text" id="contactInput" placeholder="例如：John Smith">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <p class="form-section-title">日期與提醒</p>
+          <div class="form-grid">
+            <div class="date-fields">
+              <div class="field">
+                <label for="signDateInput">簽約日</label>
+                <input type="date" id="signDateInput">
+              </div>
+              <div class="field">
+                <label for="effectiveDateInput">生效日</label>
+                <input type="date" id="effectiveDateInput">
+              </div>
+              <div class="field">
+                <label for="expiryDateInput">到期日</label>
+                <input type="date" id="expiryDateInput">
+              </div>
+            </div>
+            <div class="field full">
+              <label for="reminderDaysInput">到期前幾天開始提醒</label>
+              <input type="number" id="reminderDaysInput" min="0" step="1" value="30" style="max-width:140px">
+              <p class="field-hint">系統會自動依到期日計算「即將到期」與「已逾期」狀態，不需手動設定。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <p class="form-section-title">備註與附件連結</p>
+          <div class="form-grid">
+            <div class="field full">
+              <label for="notesInput">備註 / 條款摘要</label>
+              <textarea id="notesInput" rows="3" placeholder="重要條款、特別約定事項等"></textarea>
+            </div>
+            <div class="field full">
+              <label for="attachmentLinkInput">附件連結</label>
+              <input type="text" id="attachmentLinkInput" placeholder="貼上 Google Drive 等雲端連結（選填）">
+              <p class="field-hint">資料改存在共用試算表，無法直接上傳檔案。建議將合約檔案放到 Google Drive 後，把分享連結貼在這裡。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" id="cancelBtn">取消</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">儲存合約</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 連線設定 Modal -->
+<div class="modal-overlay" id="setupOverlay" hidden>
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h2>連線設定</h2>
+      <button class="modal-close" id="setupClose" aria-label="關閉" type="button">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <p class="form-section-title">共用資料庫連線</p>
+        <div class="field full">
+          <label for="apiUrlInput">Google Apps Script 網址</label>
+          <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+          <p class="field-hint">這個網址會連到大家共用的 Google試算表。請依照說明文件部署 Apps Script 後，貼上取得的網址。請妥善保管此網址，持有者都能讀取合約資料。</p>
+        </div>
+      </div>
+      <div class="form-section">
+        <p class="form-section-title">編輯權限</p>
+        <div class="field full">
+          <label for="editTokenInput">編輯密碼（選填）</label>
+          <input type="password" id="editTokenInput" placeholder="留空＝唯讀模式，只能查詢" autocomplete="new-password">
+          <p class="field-hint">輸入正確的編輯密碼後，才能新增、編輯、刪除合約與匯入資料；其他人留空即為唯讀，只能查詢與篩選。密碼由管理者設定在 Apps Script 程式碼中。</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" id="setupCancel">取消</button>
+      <button type="button" class="btn btn-primary" id="setupSave">儲存並連線</button>
+    </div>
+  </div>
+</div>
+
+<!-- 到期總覽 Modal -->
+<div class="modal-overlay" id="expiryOverlay" hidden>
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h2>📅 到期總覽</h2>
+      <button class="modal-close" id="expiryClose" aria-label="關閉" type="button">✕</button>
+    </div>
+    <div class="modal-body" id="expiryBody" style="padding-bottom:20px"></div>
+  </div>
+</div>
+
+<!-- 統計 Modal -->
+<div class="modal-overlay" id="statsOverlay" hidden>
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h2>📊 合約統計</h2>
+      <button class="modal-close" id="statsClose" aria-label="關閉" type="button">✕</button>
+    </div>
+    <div class="modal-body" id="statsBody" style="padding-bottom:20px"></div>
+  </div>
+</div>
+
+<!-- 匯出選擇 Modal -->
+<div class="modal-overlay" id="exportOverlay" hidden>
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2>匯出資料</h2>
+      <button class="modal-close" id="exportClose" aria-label="關閉" type="button">✕</button>
+    </div>
+    <div class="modal-body" style="padding-bottom:20px">
+      <div style="display:flex; flex-direction:column; gap:12px">
+        <button type="button" class="btn btn-primary" id="exportCsvBtn" style="justify-content:center; padding:14px">📊 匯出 Excel 報表（CSV）</button>
+        <p class="field-hint" style="margin:0">可直接用 Excel 開啟，適合列印或做報表。</p>
+        <button type="button" class="btn btn-ghost" id="exportJsonBtn" style="justify-content:center; padding:14px">💾 匯出 JSON 備份</button>
+        <p class="field-hint" style="margin:0">系統備份格式，可透過「匯入資料」還原。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const API_URL_KEY = 'contractManagerApiUrl';
+  const EDIT_TOKEN_KEY = 'contractManagerEditToken';
+  const CATEGORIES = ['供應商/採購','客戶/銷售','NDA','其他'];
+  const STATUS_KEY = { '進行中':'active', '待簽署':'pending', '已續約':'renewed', '已作廢':'void' };
+
+  let contracts = [];
+  let renewSourceId = null;
+
+  /* ---------------- 工具函式 ---------------- */
+  function escapeHtml(str){
+    if(str===null || str===undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function formatDate(d){
+    if(!d) return '—';
+    const parts = d.split('-');
+    if(parts.length!==3) return d;
+    return parts[0]+'/'+parts[1]+'/'+parts[2];
+  }
+  function getCodePrefix(code){
+    if(!code) return '未編號';
+    const c = code.trim();
+    const m = c.match(/^([A-Za-z]+\d?)/);
+    return m ? m[1].toUpperCase() : c;
+  }
+  function getSeriesInfo(prefix, excludeId){
+    let maxNum=-1, width=3, maxCode='';
+    contracts.forEach(c => {
+      if(excludeId && c.id===excludeId) return;
+      if(!c.code) return;
+      const code = c.code.trim();
+      if(getCodePrefix(code)!==prefix) return;
+      const suffix = code.slice(prefix.length);
+      if(/^\d+$/.test(suffix)){
+        const num = parseInt(suffix,10);
+        if(num>maxNum){ maxNum=num; maxCode=code; }
+        if(suffix.length>width) width=suffix.length;
+      }
+    });
+    if(maxNum<0) return null;
+    return {maxCode, next: prefix + String(maxNum+1).padStart(width,'0')};
+  }
+  function buildCodeSeriesMap(excludeId){
+    const prefixes = new Set();
+    contracts.forEach(c => {
+      if(excludeId && c.id===excludeId) return;
+      if(c.code) prefixes.add(getCodePrefix(c.code));
+    });
+    const result = [];
+    prefixes.forEach(p => {
+      if(p==='未編號') return;
+      const info = getSeriesInfo(p, excludeId);
+      if(info) result.push({prefix:p, maxCode:info.maxCode, next:info.next});
+    });
+    result.sort((a,b) => a.prefix.localeCompare(b.prefix));
+    return result;
+  }
+  function startOfDay(d){
+    const x = new Date(d);
+    x.setHours(0,0,0,0);
+    return x;
+  }
+  function diffDays(dateStr){
+    const today = startOfDay(new Date());
+    const target = startOfDay(new Date(dateStr));
+    return Math.round((target - today) / 86400000);
+  }
+
+  /* ---------------- 狀態 / 到期邏輯 ---------------- */
+  function getUrgency(c){
+    if(!c.expiryDate) return 'normal';
+    if(c.status==='已續約' || c.status==='已作廢') return 'normal';
+    const d = diffDays(c.expiryDate);
+    if(d < 0) return 'overdue';
+    if(d <= (Number(c.reminderDays)||30)) return 'expiring';
+    return 'normal';
+  }
+  function getDisplayStatus(c){
+    const urgency = getUrgency(c);
+    if(urgency==='overdue' && (c.status==='進行中'||c.status==='待簽署')){
+      return {label:'已逾期', key:'overdue'};
+    }
+    if(urgency==='expiring' && (c.status==='進行中'||c.status==='待簽署')){
+      return {label:'即將到期', key:'expiring'};
+    }
+    return {label:c.status, key:STATUS_KEY[c.status]||'void'};
+  }
+
+  /* ---------------- 共用資料庫連線 (Google Apps Script) ---------------- */
+  function getApiUrl(){
+    return (localStorage.getItem(API_URL_KEY) || '').trim();
+  }
+  function setApiUrl(url){
+    localStorage.setItem(API_URL_KEY, url.trim());
+  }
+  function getEditToken(){
+    return (localStorage.getItem(EDIT_TOKEN_KEY) || '').trim();
+  }
+  function setEditToken(token){
+    localStorage.setItem(EDIT_TOKEN_KEY, token.trim());
+  }
+  function isEditor(){
+    return !!getEditToken();
+  }
+  async function apiGet(){
+    const url = getApiUrl();
+    if(!url) throw new Error('NO_API_URL');
+    const res = await fetch(url, { method:'GET' });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || '讀取失敗');
+    return json.data || [];
+  }
+  async function apiPost(payload){
+    const url = getApiUrl();
+    if(!url) throw new Error('NO_API_URL');
+    const res = await fetch(url, { method:'POST', body: JSON.stringify(Object.assign({token: getEditToken()}, payload)) });
+    const json = await res.json();
+    if(!json.ok){
+      if(json.error==='PERMISSION_DENIED'){
+        throw new Error('PERMISSION_DENIED');
+      }
+      throw new Error(json.error || '操作失敗');
+    }
+    return json;
+  }
+  function getErrorMessage(err){
+    if(err && err.message==='NO_API_URL'){
+      return '尚未設定共用資料庫連線，請點右上方「設定」完成設定。';
+    }
+    if(err && err.message==='PERMISSION_DENIED'){
+      return '編輯密碼不正確，沒有編輯權限。請在「設定」中確認編輯密碼，或聯絡管理者。';
+    }
+    return '連線失敗：' + (err && err.message ? err.message : '未知錯誤') + '（請確認網址是否正確，或稍後再試一次）';
+  }
+  function showStatus(type, message, withSettingsBtn){
+    const banner = document.getElementById('statusBanner');
+    banner.className = 'status-banner ' + type;
+    banner.innerHTML = '<span style="flex:1">'+escapeHtml(message)+'</span>'
+      + (withSettingsBtn ? '<button type="button" class="btn btn-sm btn-ghost" id="statusSettingsBtn">設定</button>' : '');
+    banner.hidden = false;
+    if(withSettingsBtn){
+      document.getElementById('statusSettingsBtn').addEventListener('click', openSetupModal);
+    }
+  }
+  function hideStatus(){
+    document.getElementById('statusBanner').hidden = true;
+  }
+
+  /* ---------------- 讀取 / 寫入合約 ---------------- */
+  async function loadContracts(){
+    if(!getApiUrl()){
+      contracts = [];
+      showStatus('error', '尚未設定共用資料庫連線，請點右上方「設定」完成設定。', true);
+      render();
+      return;
+    }
+    showStatus('info', '載入中…');
+    try{
+      const data = await apiGet();
+      contracts = data.map(c => Object.assign({}, c, {
+        reminderDays: Number(c.reminderDays) || 30
+      }));
+      hideStatus();
+      render();
+    }catch(err){
+      showStatus('error', getErrorMessage(err), true);
+      render();
+    }
+  }
+
+  /* ---------------- 篩選 / 排序 ---------------- */
+  function getFilteredContracts(){
+    let list = contracts.slice();
+    const search = document.getElementById('searchInput').value.trim().toLowerCase();
+    if(search){
+      list = list.filter(c =>
+        (c.code||'').toLowerCase().includes(search) ||
+        (c.name||'').toLowerCase().includes(search) ||
+        (c.company||'').toLowerCase().includes(search) ||
+        (c.contact||'').toLowerCase().includes(search) ||
+        (c.notes||'').toLowerCase().includes(search)
+      );
+    }
+    const cat = document.getElementById('categoryFilter').value;
+    if(cat!=='all') list = list.filter(c => c.category===cat);
+
+    const status = document.getElementById('statusFilter').value;
+    if(status==='expiring') list = list.filter(c => getUrgency(c)==='expiring');
+    else if(status==='overdue') list = list.filter(c => getUrgency(c)==='overdue');
+    else if(status!=='all') list = list.filter(c => c.status===status);
+
+    const sort = document.getElementById('sortSelect').value;
+    list.sort((a,b) => {
+      switch(sort){
+        case 'expiry-asc': return (a.expiryDate||'9999-99-99').localeCompare(b.expiryDate||'9999-99-99');
+        case 'expiry-desc': return (b.expiryDate||'0000-00-00').localeCompare(a.expiryDate||'0000-00-00');
+        case 'updated': return (b.updatedAt||0) - (a.updatedAt||0);
+        case 'name': return (a.name||'').localeCompare(b.name||'', 'zh-Hant');
+        default: return 0;
+      }
+    });
+    return list;
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  function render(){
+    renderDashboard();
+    renderList();
+  }
+
+  function renderDashboard(){
+    const total = contracts.length;
+    const active = contracts.filter(c => c.status==='進行中').length;
+    const expiring = contracts.filter(c => getUrgency(c)==='expiring').length;
+    const overdue = contracts.filter(c => getUrgency(c)==='overdue').length;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statActive').textContent = active;
+    document.getElementById('statExpiring').textContent = expiring;
+    document.getElementById('statOverdue').textContent = overdue;
+  }
+
+  function renderCard(c){
+    const disp = getDisplayStatus(c);
+    const urgency = getUrgency(c);
+    let stamp = '';
+    if(urgency==='expiring'){
+      const d = diffDays(c.expiryDate);
+      stamp = '<div class="countdown-stamp" title="距到期日還有 '+d+' 天" style="--status-color:var(--status-expiring)">'
+            + '<span class="num">'+d+'</span><span class="unit">天後到期</span></div>';
+    }else if(urgency==='overdue'){
+      const d = Math.abs(diffDays(c.expiryDate));
+      stamp = '<div class="countdown-stamp" title="已逾期 '+d+' 天" style="--status-color:var(--status-overdue)">'
+            + '<span class="num">'+d+'</span><span class="unit">天已逾期</span></div>';
+    }
+
+    const metaParts = [];
+    if(c.company) metaParts.push('<span>'+escapeHtml(c.company)+'</span>');
+    if(c.contact) metaParts.push('<span>'+escapeHtml(c.contact)+'</span>');
+    const meta = metaParts.length ? metaParts.join('<span class="dot">·</span>') : '<span>—</span>';
+
+    let urgencyTag = '';
+    if(urgency==='expiring'){
+      urgencyTag = '<span class="urgency-tag urgency-expiring">'+diffDays(c.expiryDate)+' 天後到期</span>';
+    }else if(urgency==='overdue'){
+      urgencyTag = '<span class="urgency-tag urgency-overdue">已逾期 '+Math.abs(diffDays(c.expiryDate))+' 天</span>';
+    }
+
+    let notesLine = c.notes ? '<p class="card-notes">'+escapeHtml(c.notes)+'</p>' : '';
+
+    let linkLine = '';
+    if(c.attachmentLink){
+      linkLine = '<div class="card-link"><a href="'+escapeHtml(c.attachmentLink)+'" target="_blank" rel="noopener noreferrer">🔗 附件連結</a></div>';
+    }
+
+    const codeTag = c.code ? '<span class="card-code">'+escapeHtml(c.code)+'</span>' : '';
+
+    const actions = isEditor()
+      ? '<div class="card-actions">'
+        + '<button class="btn btn-sm btn-ghost" data-action="renew" data-id="'+c.id+'">續約</button>'
+        + '<button class="btn btn-sm btn-ghost" data-action="edit" data-id="'+c.id+'">編輯</button>'
+        + '<button class="btn btn-sm btn-danger" data-action="delete" data-id="'+c.id+'">刪除</button>'
+      + '</div>'
+      : '';
+
+    return '<article class="contract-card" style="--status-color:var(--status-'+disp.key+');--status-color-bg:var(--status-'+disp.key+'-bg)" data-id="'+c.id+'">'
+      + stamp
+      + '<div class="card-top">'
+        + '<div class="card-title-group">'
+          + codeTag
+          + '<h3 class="card-title">'+(escapeHtml(c.name)||'未命名合約')+'</h3>'
+          + '<span class="badge badge-category">'+escapeHtml(c.category)+'</span>'
+        + '</div>'
+        + '<span class="badge badge-status">'+escapeHtml(disp.label)+'</span>'
+      + '</div>'
+      + '<div class="card-meta">'+meta+'</div>'
+      + '<div class="date-grid">'
+        + '<div class="date-item"><span class="date-label">簽約</span><span>'+formatDate(c.signDate)+'</span></div>'
+        + '<div class="date-item"><span class="date-label">生效</span><span>'+formatDate(c.effectiveDate)+'</span></div>'
+        + '<div class="date-item"><span class="date-label">到期</span><span>'+formatDate(c.expiryDate)+'</span></div>'
+      + '</div>'
+      + urgencyTag
+      + notesLine
+      + linkLine
+      + actions
+    + '</article>';
+  }
+
+  function renderList(){
+    const container = document.getElementById('contractList');
+    const empty = document.getElementById('emptyState');
+    const list = getFilteredContracts();
+
+    if(contracts.length===0){
+      container.innerHTML = '';
+      empty.hidden = false;
+      if(!getApiUrl()){
+        empty.querySelector('.empty-title').textContent = '尚未設定共用資料庫';
+        empty.querySelector('.empty-desc').textContent = '請點右上方「設定」按鈕，貼上 Google Apps Script 網址後即可開始使用。';
+      }else{
+        empty.querySelector('.empty-title').textContent = '尚未建立任何合約';
+        empty.querySelector('.empty-desc').textContent = '點擊右上方「＋ 新增合約」開始建立第一筆合約紀錄。';
+      }
+      return;
+    }
+    if(list.length===0){
+      container.innerHTML = '';
+      empty.hidden = false;
+      empty.querySelector('.empty-title').textContent = '找不到符合條件的合約';
+      empty.querySelector('.empty-desc').textContent = '請試著調整搜尋關鍵字或篩選條件。';
+      return;
+    }
+    empty.hidden = true;
+
+    const groupMode = document.getElementById('groupSelect').value;
+    if(groupMode==='category'){
+      const groups = {};
+      CATEGORIES.forEach(cat => groups[cat]=[]);
+      list.forEach(c => {
+        if(!groups[c.category]) groups[c.category]=[];
+        groups[c.category].push(c);
+      });
+      let html = '';
+      CATEGORIES.forEach(cat => {
+        const items = groups[cat];
+        if(items && items.length){
+          html += '<div class="group-section"><h2 class="group-title">'+cat+' <span class="group-count">'+items.length+' 筆</span></h2>'
+                + '<div class="card-grid">'+items.map(renderCard).join('')+'</div></div>';
+        }
+      });
+      container.innerHTML = html;
+    }else if(groupMode==='code'){
+      const groups = {};
+      const order = [];
+      list.forEach(c => {
+        const prefix = getCodePrefix(c.code);
+        if(!groups[prefix]){ groups[prefix]=[]; order.push(prefix); }
+        groups[prefix].push(c);
+      });
+      order.sort((a,b) => {
+        if(a==='未編號') return 1;
+        if(b==='未編號') return -1;
+        return a.localeCompare(b);
+      });
+      let html = '';
+      order.forEach(prefix => {
+        const items = groups[prefix];
+        html += '<div class="group-section"><h2 class="group-title">'+escapeHtml(prefix)+' <span class="group-count">'+items.length+' 筆</span></h2>'
+              + '<div class="card-grid">'+items.map(renderCard).join('')+'</div></div>';
+      });
+      container.innerHTML = html;
+    }else{
+      container.innerHTML = '<div class="card-grid">'+list.map(renderCard).join('')+'</div>';
+    }
+  }
+
+  /* ---------------- Modal ---------------- */
+  const modalOverlay = document.getElementById('modalOverlay');
+  const contractForm = document.getElementById('contractForm');
+
+  function openModal(contract){
+    renewSourceId = null;
+    contractForm.reset();
+    document.getElementById('contractId').value = contract ? contract.id : '';
+    document.getElementById('modalTitle').textContent = contract ? '編輯合約' : '新增合約';
+
+    document.getElementById('codeInput').value = contract ? (contract.code||'') : '';
+    document.getElementById('nameInput').value = contract ? (contract.name||'') : '';
+    document.getElementById('categoryInput').value = contract ? (contract.category||'供應商/採購') : '供應商/採購';
+    document.getElementById('statusInput').value = contract ? (contract.status||'進行中') : '進行中';
+    document.getElementById('companyInput').value = contract ? (contract.company||'') : '';
+    document.getElementById('contactInput').value = contract ? (contract.contact||'') : '';
+    document.getElementById('signDateInput').value = contract ? (contract.signDate||'') : '';
+    document.getElementById('effectiveDateInput').value = contract ? (contract.effectiveDate||'') : '';
+    document.getElementById('expiryDateInput').value = contract ? (contract.expiryDate||'') : '';
+    document.getElementById('reminderDaysInput').value = contract ? (contract.reminderDays||30) : 30;
+    document.getElementById('notesInput').value = contract ? (contract.notes||'') : '';
+    document.getElementById('attachmentLinkInput').value = contract ? (contract.attachmentLink||'') : '';
+
+    document.getElementById('codeRefPanel').hidden = true;
+    updateCodeHint();
+    modalOverlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('nameInput').focus();
+  }
+  function openRenewModal(source){
+    openModal(null);
+    renewSourceId = source.id;
+    document.getElementById('modalTitle').textContent = '續約合約';
+    // 帶入原合約基本資訊
+    document.getElementById('nameInput').value = source.name || '';
+    document.getElementById('categoryInput').value = source.category || '供應商/採購';
+    document.getElementById('statusInput').value = '進行中';
+    document.getElementById('companyInput').value = source.company || '';
+    document.getElementById('contactInput').value = source.contact || '';
+    document.getElementById('reminderDaysInput').value = source.reminderDays || 30;
+    document.getElementById('notesInput').value = '續約自 ' + (source.code || source.name || '');
+    // 自動建議同系列的下一個編號
+    if(source.code){
+      const info = getSeriesInfo(getCodePrefix(source.code), null);
+      if(info) document.getElementById('codeInput').value = info.next;
+    }
+    updateCodeHint();
+  }
+  function closeModal(){
+    modalOverlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  /* ---------------- CRUD ---------------- */
+  async function deleteContract(id){
+    const c = contracts.find(x => x.id===id);
+    if(!c) return;
+    if(!confirm('確定要刪除合約「'+(c.name||'未命名合約')+'」嗎？這會從共用資料庫中移除，所有人都看不到，且無法復原。')) return;
+    try{
+      await apiPost({action:'delete', id:id});
+      contracts = contracts.filter(x => x.id!==id);
+      render();
+    }catch(err){
+      alert('刪除失敗：'+getErrorMessage(err));
+    }
+  }
+
+  /* ---------------- 匯出 / 匯入 ---------------- */
+  function downloadBlob(content, mimeType, filename){
+    const blob = new Blob([content], {type:mimeType});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  function dateStamp(){
+    const now = new Date();
+    return now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
+  }
+  function exportData(){
+    downloadBlob(JSON.stringify(contracts, null, 2), 'application/json', '合約資料_'+dateStamp()+'.json');
+  }
+  function exportCSV(){
+    const headers = ['編號','合約名稱','類別','狀態','對方公司','聯絡人','簽約日','生效日','到期日','提醒天數','備註','附件連結'];
+    const fields = ['code','name','category','status','company','contact','signDate','effectiveDate','expiryDate','reminderDays','notes','attachmentLink'];
+    const esc = v => '"' + String(v===undefined||v===null ? '' : v).replace(/"/g,'""') + '"';
+    const lines = [headers.map(esc).join(',')];
+    // 依到期日排序匯出，方便報表閱讀
+    const sorted = contracts.slice().sort((a,b) => (a.expiryDate||'9999-99-99').localeCompare(b.expiryDate||'9999-99-99'));
+    sorted.forEach(c => {
+      lines.push(fields.map(f => esc(c[f])).join(','));
+    });
+    // \uFEFF (BOM) 讓 Excel 正確顯示繁體中文
+    downloadBlob('\uFEFF'+lines.join('\r\n'), 'text/csv;charset=utf-8', '合約報表_'+dateStamp()+'.csv');
+  }
+  function importData(file){
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try{
+        const imported = JSON.parse(reader.result);
+        if(!Array.isArray(imported)) throw new Error('format');
+        if(!getApiUrl()){ alert('請先完成「設定」連線共用資料庫，再匯入資料。'); return; }
+        if(!confirm('確定要匯入 '+imported.length+' 筆合約資料到共用資料庫嗎？這些資料會新增到目前的清單中，所有人都會看到。')) return;
+        const records = imported.map(item => {
+          const now = Date.now();
+          return {
+            id: 'c_'+now+'_'+Math.random().toString(36).slice(2,8),
+            code: item.code || '',
+            name: item.name || '',
+            category: item.category || '其他',
+            status: item.status || '進行中',
+            company: item.company || '',
+            contact: item.contact || '',
+            signDate: item.signDate || '',
+            effectiveDate: item.effectiveDate || '',
+            expiryDate: item.expiryDate || '',
+            reminderDays: Number(item.reminderDays)||30,
+            notes: item.notes || '',
+            attachmentLink: item.attachmentLink || '',
+            createdAt: item.createdAt || now,
+            updatedAt: now
+          };
+        });
+        await apiPost({action:'bulkImport', data: records});
+        await loadContracts();
+        alert('匯入完成！共新增 '+records.length+' 筆合約。');
+      }catch(err){
+        if(err.message==='format'){
+          alert('匯入失敗：檔案格式不正確，請確認是本系統匯出的 JSON 檔案。');
+        }else{
+          alert('匯入失敗：'+getErrorMessage(err));
+        }
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ---------------- 連線設定 ---------------- */
+  const setupOverlay = document.getElementById('setupOverlay');
+  function openSetupModal(){
+    document.getElementById('apiUrlInput').value = getApiUrl();
+    document.getElementById('editTokenInput').value = getEditToken();
+    setupOverlay.hidden = false;
+  }
+  function closeSetupModal(){
+    setupOverlay.hidden = true;
+  }
+  function updateModeUI(){
+    const editor = isEditor();
+    document.getElementById('addBtn').hidden = !editor;
+    document.getElementById('importBtn').hidden = !editor;
+    document.getElementById('modeIndicator').textContent = editor ? '✏️ 編輯模式' : '🔍 唯讀模式（僅可查詢）';
+    document.getElementById('modeIndicator').className = 'mode-indicator ' + (editor ? 'editor' : 'viewer');
+    render();
+  }
+
+  /* ---------------- 到期總覽 ---------------- */
+  const expiryOverlay = document.getElementById('expiryOverlay');
+  function openExpiryModal(){
+    const body = document.getElementById('expiryBody');
+    // 只列出「進行中」與「待簽署」且有到期日的合約（已續約/已作廢不需追蹤到期）
+    const live = contracts.filter(c => (c.status==='進行中'||c.status==='待簽署') && c.expiryDate);
+    if(!live.length){
+      body.innerHTML = '<p class="expiry-empty">目前沒有需要追蹤到期日的合約。<br><small>此頁只顯示狀態為「進行中」或「待簽署」且有填寫到期日的合約。</small></p>';
+      expiryOverlay.hidden = false;
+      return;
+    }
+    live.sort((a,b) => a.expiryDate.localeCompare(b.expiryDate));
+    const overdue = live.filter(c => diffDays(c.expiryDate) < 0);
+    const upcoming = live.filter(c => diffDays(c.expiryDate) >= 0);
+
+    function rowHtml(c){
+      const d = diffDays(c.expiryDate);
+      let daysTag;
+      if(d < 0) daysTag = '<span class="e-days d-overdue">逾期 '+Math.abs(d)+' 天</span>';
+      else if(d <= (Number(c.reminderDays)||30)) daysTag = '<span class="e-days d-soon">'+d+' 天後</span>';
+      else daysTag = '<span class="e-days d-ok">'+d+' 天後</span>';
+      return '<div class="expiry-row" data-id="'+c.id+'">'
+        + '<span class="e-code">'+escapeHtml(c.code||'—')+'</span>'
+        + '<span class="e-name">'+escapeHtml(c.name||'未命名合約')+'</span>'
+        + '<span class="e-company">'+escapeHtml(c.company||'')+'</span>'
+        + '<span style="flex:0 0 90px; font-variant-numeric:tabular-nums; color:var(--ink-soft)">'+formatDate(c.expiryDate)+'</span>'
+        + daysTag
+        + '</div>';
+    }
+
+    let html = '';
+    if(overdue.length){
+      html += '<div class="expiry-month"><h3 class="expiry-month-title overdue-title">⚠️ 已逾期 <span class="group-count">'+overdue.length+' 筆</span></h3>'
+            + overdue.map(rowHtml).join('') + '</div>';
+    }
+    // 依月份分組
+    const monthGroups = {};
+    const monthOrder = [];
+    upcoming.forEach(c => {
+      const key = c.expiryDate.slice(0,7); // YYYY-MM
+      if(!monthGroups[key]){ monthGroups[key]=[]; monthOrder.push(key); }
+      monthGroups[key].push(c);
+    });
+    monthOrder.forEach(key => {
+      const label = key.replace('-', ' 年 ') + ' 月';
+      html += '<div class="expiry-month"><h3 class="expiry-month-title">'+label+' <span class="group-count">'+monthGroups[key].length+' 筆</span></h3>'
+            + monthGroups[key].map(rowHtml).join('') + '</div>';
+    });
+    body.innerHTML = html;
+    expiryOverlay.hidden = false;
+  }
+  document.getElementById('expiryViewBtn').addEventListener('click', openExpiryModal);
+  document.getElementById('expiryClose').addEventListener('click', () => { expiryOverlay.hidden = true; });
+  expiryOverlay.addEventListener('click', (e) => {
+    if(e.target===expiryOverlay){ expiryOverlay.hidden = true; return; }
+    const row = e.target.closest('.expiry-row');
+    if(row && isEditor()){
+      const c = contracts.find(x => x.id===row.dataset.id);
+      if(c){ expiryOverlay.hidden = true; openModal(c); }
+    }
+  });
+
+  /* ---------------- 統計 ---------------- */
+  const statsOverlay = document.getElementById('statsOverlay');
+  const CHART_COLORS = ['#2C4A52','#B5814A','#3E5C8A','#3F7D52','#A6781B','#C2622A','#888C90'];
+  function donutChart(counts){
+    // counts: [{label, value}], 回傳 SVG + 圖例 HTML
+    const total = counts.reduce((s,x) => s+x.value, 0);
+    if(!total) return '<p class="expiry-empty">無資料</p>';
+    const R = 60, CIRC = 2*Math.PI*R;
+    let offset = 0, circles = '';
+    counts.forEach((x,i) => {
+      const frac = x.value/total;
+      circles += '<circle r="'+R+'" cx="80" cy="80" fill="transparent" stroke="'+CHART_COLORS[i%CHART_COLORS.length]+'" stroke-width="28" '
+        + 'stroke-dasharray="'+(frac*CIRC)+' '+(CIRC-frac*CIRC)+'" stroke-dashoffset="'+(-offset*CIRC)+'" transform="rotate(-90 80 80)"/>';
+      offset += frac;
+    });
+    const legend = counts.map((x,i) =>
+      '<div class="legend-item"><span class="legend-dot" style="background:'+CHART_COLORS[i%CHART_COLORS.length]+'"></span>'
+      + escapeHtml(x.label)+' <span class="l-count">'+x.value+' 筆（'+Math.round(x.value/total*100)+'%）</span></div>'
+    ).join('');
+    return '<div class="donut-wrap"><svg width="160" height="160" viewBox="0 0 160 160">'+circles
+      + '<text x="80" y="86" text-anchor="middle" font-size="24" font-weight="700" fill="var(--ink)">'+total+'</text>'
+      + '</svg><div class="donut-legend">'+legend+'</div></div>';
+  }
+  function barChart(counts){
+    // counts: [{label, value}]
+    const max = Math.max(...counts.map(x => x.value), 1);
+    return counts.map(x =>
+      '<div class="hbar-row"><span class="hbar-label">'+escapeHtml(x.label)+'</span>'
+      + '<div class="hbar-track"><div class="hbar-fill" style="width:'+(x.value/max*100)+'%"></div></div>'
+      + '<span class="hbar-count">'+x.value+'</span></div>'
+    ).join('');
+  }
+  function openStatsModal(){
+    const body = document.getElementById('statsBody');
+    if(!contracts.length){
+      body.innerHTML = '<p class="expiry-empty">目前沒有合約資料。</p>';
+      statsOverlay.hidden = false;
+      return;
+    }
+    // 類別分布
+    const catCounts = CATEGORIES.map(cat => ({label:cat, value:contracts.filter(c => c.category===cat).length}))
+      .filter(x => x.value>0);
+    // 狀態分布
+    const statusList = ['進行中','待簽署','已續約','已作廢'];
+    const statusCounts = statusList.map(s => ({label:s, value:contracts.filter(c => c.status===s).length}))
+      .filter(x => x.value>0);
+    // 簽約年份分布（近10年 + 更早）
+    const yearMap = {};
+    contracts.forEach(c => {
+      if(c.signDate && /^\d{4}/.test(c.signDate)){
+        const y = c.signDate.slice(0,4);
+        yearMap[y] = (yearMap[y]||0)+1;
+      }
+    });
+    const years = Object.keys(yearMap).sort();
+    let yearCounts = years.map(y => ({label:y+' 年', value:yearMap[y]}));
+    if(yearCounts.length > 12){
+      const early = yearCounts.slice(0, yearCounts.length-12);
+      const earlySum = early.reduce((s,x) => s+x.value, 0);
+      yearCounts = [{label:early[early.length-1].label.replace(' 年','')+' 年以前', value:earlySum}].concat(yearCounts.slice(-12));
+    }
+
+    body.innerHTML =
+      '<div class="stats-section"><h3 class="stats-section-title">類別分布</h3>'+donutChart(catCounts)+'</div>'
+      + '<div class="stats-section"><h3 class="stats-section-title">狀態分布</h3>'+barChart(statusCounts)+'</div>'
+      + '<div class="stats-section"><h3 class="stats-section-title">簽約年份分布</h3>'+barChart(yearCounts)+'</div>';
+    statsOverlay.hidden = false;
+  }
+  document.getElementById('statsBtn').addEventListener('click', openStatsModal);
+  document.getElementById('statsClose').addEventListener('click', () => { statsOverlay.hidden = true; });
+  statsOverlay.addEventListener('click', (e) => { if(e.target===statsOverlay) statsOverlay.hidden = true; });
+
+  /* ---------------- 匯出選擇 ---------------- */
+  const exportOverlay = document.getElementById('exportOverlay');
+  document.getElementById('exportClose').addEventListener('click', () => { exportOverlay.hidden = true; });
+  exportOverlay.addEventListener('click', (e) => { if(e.target===exportOverlay) exportOverlay.hidden = true; });
+  document.getElementById('exportCsvBtn').addEventListener('click', () => { exportCSV(); exportOverlay.hidden = true; });
+  document.getElementById('exportJsonBtn').addEventListener('click', () => { exportData(); exportOverlay.hidden = true; });
+
+  /* ---------------- 事件綁定 ---------------- */
+  document.getElementById('addBtn').addEventListener('click', () => openModal(null));
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', (e) => { if(e.target===modalOverlay) closeModal(); });
+  document.addEventListener('keydown', (e) => {
+    if(e.key==='Escape'){
+      if(!modalOverlay.hidden) closeModal();
+      if(!setupOverlay.hidden) closeSetupModal();
+      const eo = document.getElementById('expiryOverlay');
+      const so = document.getElementById('statsOverlay');
+      const xo = document.getElementById('exportOverlay');
+      if(!eo.hidden) eo.hidden = true;
+      if(!so.hidden) so.hidden = true;
+      if(!xo.hidden) xo.hidden = true;
+    }
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', openSetupModal);
+  document.getElementById('setupClose').addEventListener('click', closeSetupModal);
+  document.getElementById('setupCancel').addEventListener('click', closeSetupModal);
+  setupOverlay.addEventListener('click', (e) => { if(e.target===setupOverlay) closeSetupModal(); });
+  document.getElementById('setupSave').addEventListener('click', async () => {
+    const url = document.getElementById('apiUrlInput').value.trim();
+    if(!url){ alert('請輸入 Google Apps Script 網址。'); return; }
+    setApiUrl(url);
+    setEditToken(document.getElementById('editTokenInput').value);
+    closeSetupModal();
+    updateModeUI();
+    await loadContracts();
+  });
+  document.getElementById('refreshBtn').addEventListener('click', () => loadContracts());
+
+  function updateCodeHint(){
+    const hint = document.getElementById('codeHint');
+    const val = document.getElementById('codeInput').value.trim();
+    if(!val){ hint.innerHTML = ''; return; }
+    const prefix = getCodePrefix(val);
+    if(prefix==='未編號'){ hint.innerHTML = ''; return; }
+    const currentId = document.getElementById('contractId').value;
+    const info = getSeriesInfo(prefix, currentId);
+    if(info && info.next.toUpperCase()!==val.toUpperCase()){
+      hint.innerHTML = '此系列目前最新為 '+escapeHtml(info.maxCode)
+        + '<button type="button" class="code-hint-apply" data-next="'+escapeHtml(info.next)+'">套用下一個：'+escapeHtml(info.next)+'</button>';
+    }else{
+      hint.innerHTML = '';
+    }
+  }
+  document.getElementById('codeInput').addEventListener('input', updateCodeHint);
+  document.getElementById('codeHint').addEventListener('click', (e) => {
+    const btn = e.target.closest('.code-hint-apply');
+    if(btn){
+      document.getElementById('codeInput').value = btn.dataset.next;
+      updateCodeHint();
+    }
+  });
+  document.getElementById('codeRefBtn').addEventListener('click', () => {
+    const panel = document.getElementById('codeRefPanel');
+    if(!panel.hidden){ panel.hidden = true; return; }
+    const currentId = document.getElementById('contractId').value;
+    const series = buildCodeSeriesMap(currentId);
+    if(!series.length){
+      panel.innerHTML = '<p class="code-ref-empty">目前還沒有可參考的編號規則，請手動輸入編號。</p>';
+    }else{
+      panel.innerHTML = series.map(s =>
+        '<div class="code-ref-row" data-next="'+escapeHtml(s.next)+'">'
+        + '<span class="prefix">'+escapeHtml(s.prefix)+'</span>'
+        + '<span class="ref-max">最新 '+escapeHtml(s.maxCode)+'</span>'
+        + '<span class="ref-next">下一個 '+escapeHtml(s.next)+'</span>'
+        + '</div>'
+      ).join('');
+    }
+    panel.hidden = false;
+  });
+  document.getElementById('codeRefPanel').addEventListener('click', (e) => {
+    const row = e.target.closest('.code-ref-row');
+    if(row){
+      document.getElementById('codeInput').value = row.dataset.next;
+      document.getElementById('codeRefPanel').hidden = true;
+      updateCodeHint();
+    }
+  });
+
+  contractForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('contractId').value;
+    const data = {
+      code: document.getElementById('codeInput').value.trim(),
+      name: document.getElementById('nameInput').value.trim(),
+      category: document.getElementById('categoryInput').value,
+      status: document.getElementById('statusInput').value,
+      company: document.getElementById('companyInput').value.trim(),
+      contact: document.getElementById('contactInput').value.trim(),
+      signDate: document.getElementById('signDateInput').value,
+      effectiveDate: document.getElementById('effectiveDateInput').value,
+      expiryDate: document.getElementById('expiryDateInput').value,
+      reminderDays: parseInt(document.getElementById('reminderDaysInput').value,10) || 30,
+      notes: document.getElementById('notesInput').value.trim(),
+      attachmentLink: document.getElementById('attachmentLinkInput').value.trim(),
+      updatedAt: Date.now()
+    };
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '儲存中…';
+    try{
+      if(id){
+        const idx = contracts.findIndex(c => c.id===id);
+        data.id = id;
+        data.createdAt = (idx>-1 && contracts[idx].createdAt) ? contracts[idx].createdAt : Date.now();
+        await apiPost({action:'update', data});
+        if(idx>-1) contracts[idx] = Object.assign({}, contracts[idx], data);
+      }else{
+        data.id = 'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+        data.createdAt = Date.now();
+        await apiPost({action:'create', data});
+        contracts.push(data);
+        // 若為續約，將原合約狀態改為「已續約」
+        if(renewSourceId){
+          const srcIdx = contracts.findIndex(c => c.id===renewSourceId);
+          if(srcIdx>-1 && contracts[srcIdx].status!=='已作廢'){
+            const updated = Object.assign({}, contracts[srcIdx], {status:'已續約', updatedAt: Date.now()});
+            try{
+              await apiPost({action:'update', data: updated});
+              contracts[srcIdx] = updated;
+            }catch(err2){
+              alert('新合約已建立，但原合約狀態更新失敗，請手動將原合約改為「已續約」。');
+            }
+          }
+          renewSourceId = null;
+        }
+      }
+      render();
+      closeModal();
+    }catch(err){
+      alert('儲存失敗：'+getErrorMessage(err));
+    }finally{
+      saveBtn.disabled = false;
+      saveBtn.textContent = '儲存合約';
+    }
+  });
+
+  document.getElementById('contractList').addEventListener('click', (e) => {
+    const renewBtn = e.target.closest('[data-action="renew"]');
+    const editBtn = e.target.closest('[data-action="edit"]');
+    const delBtn = e.target.closest('[data-action="delete"]');
+    if(renewBtn){
+      const c = contracts.find(x => x.id===renewBtn.dataset.id);
+      if(c) openRenewModal(c);
+    }else if(editBtn){
+      const c = contracts.find(x => x.id===editBtn.dataset.id);
+      if(c) openModal(c);
+    }else if(delBtn){
+      deleteContract(delBtn.dataset.id);
+    }
+  });
+
+  document.getElementById('searchInput').addEventListener('input', renderList);
+  document.getElementById('categoryFilter').addEventListener('change', renderList);
+  document.getElementById('statusFilter').addEventListener('change', renderList);
+  document.getElementById('sortSelect').addEventListener('change', renderList);
+  document.getElementById('groupSelect').addEventListener('change', renderList);
+
+  document.querySelectorAll('.stat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const f = card.dataset.filter;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('categoryFilter').value = 'all';
+      if(f==='all') document.getElementById('statusFilter').value = 'all';
+      else if(f==='active') document.getElementById('statusFilter').value = '進行中';
+      else if(f==='expiring') document.getElementById('statusFilter').value = 'expiring';
+      else if(f==='overdue') document.getElementById('statusFilter').value = 'overdue';
+      renderList();
+    });
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => { document.getElementById('exportOverlay').hidden = false; });
+  document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) importData(file);
+    e.target.value = '';
+  });
+
+  /* ---------------- 初始化 ---------------- */
+  updateModeUI();
+  if(!getApiUrl()){
+    openSetupModal();
+  }
+  loadContracts();
+})();
+</script>
+</body>
+</html>
